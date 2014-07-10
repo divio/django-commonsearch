@@ -12,6 +12,9 @@ from haystack.management.commands.build_solr_schema import Command as BuildSolrS
 
 from aldryn_search.utils import language_from_alias
 
+from commonsearch.utils import override_settings
+
+
 sys.path.append(settings.PROJECT_ROOT)
 
 
@@ -29,7 +32,7 @@ class Command(BuildSolrSchemaCommand):
     option_list = BaseCommand.option_list + base_options
 
     def handle(self, *args, **options):
-        stages = options.get('stages', ['dev'])
+        stages = options.get('stages') or ['dev']
         for backend in settings.HAYSTACK_CONNECTIONS:
             for stage in stages:
                 schema_xml = self.build_template(using=backend)
@@ -50,7 +53,8 @@ class Command(BuildSolrSchemaCommand):
         if not os.path.isdir(core_root):
             os.makedirs(core_root)
 
-        core_conf_root = self.build_conf(core_root)
+        with override_settings(TEMPLATE_DEBUG=True):
+            core_conf_root = self.build_conf(core_root)
 
         schema_xml_path = os.path.join(core_conf_root, 'schema.xml')
         self.write_file(schema_xml_path, schema_xml)
