@@ -1,3 +1,4 @@
 include LICENSE.txt
+recursive-include commonsearch/conf *
 recursive-include commonsearch/templates *
 recursive-exclude * *.pyc
