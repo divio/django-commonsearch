@@ -56,6 +56,9 @@ class ExtendedSolrSearchBackend(SolrSearchBackend):
             if field_class.stored is False:
                 field_data['stored'] = 'false'
 
+            if field_class.indexed is False:
+                field_data['indexed'] = 'false'
+
             # If it's a ``FacetField``, make sure we don't postprocess it.
             if hasattr(field_class, 'facet_for'):
                 # If it's text, it ought to be a string.
