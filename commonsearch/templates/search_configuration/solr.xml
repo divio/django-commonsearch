@@ -16,7 +16,8 @@
  limitations under the License.
 -->
 {% load i18n %}
-{% get_language_info for current_language as language %}
+
+{% if language %}{% get_language_info for language as language_info %}{% endif %}
 
 <schema name="default" version="1.4">
   <types>
@@ -110,7 +111,7 @@
         <filter class="solr.ASCIIFoldingFilterFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.NGramFilterFactory" minGramSize="2" maxGramSize="30" />
-        <filter class="solr.SnowballPorterFilterFactory" language="{{ language.name }}"/>
+        <filter class="solr.SnowballPorterFilterFactory" language="{{ language_info.name|default:'English' }}"/>
       </analyzer>
       <analyzer type="query">
         <charFilter class="solr.HTMLStripCharFilterFactory"/>
@@ -118,7 +119,7 @@
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <filter class="solr.LengthFilterFactory" min="2" max="30" /><!-- same min/max as the NgramFilterFactor on index -->
         <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.SnowballPorterFilterFactory" language="{{ language.name }}"/>
+        <filter class="solr.SnowballPorterFilterFactory" language="{{ language_info.name|default:'English' }}"/>
       </analyzer>
     </fieldType>
 

@@ -14,20 +14,27 @@ class ExtendedSolrSearchBackend(SolrSearchBackend):
 
         current_language = get_language()
 
-        for field_name, field_class in fields.items():
+        for field_name, field_class in sorted(fields.items()):
             field_data = {
                 'field_name': field_class.index_fieldname,
                 'type': field_class.field_type.format(language_code=current_language),
                 'indexed': 'true',
                 'stored': 'true',
                 'multi_valued': 'false',
-                'omit_norms': 'true'
             }
 
             # custom !!!
-            # allows field classes to specify omitNorms, needs to also be added in schema.xml if not default
-            if hasattr(field_class, 'omit_norms'):
-                field_data['omit_norms'] = field_class.omit_norms
+            # allows field classes to specify solr specific field attributes
+            # needs to also be added in schema.xml if not default
+            solr_attributes = [
+                ('omit_norms', 'true'),
+                ('term_vectors', 'false'),
+                ('term_positions', 'false'),
+                ('term_offsets', 'false'),
+            ]
+
+            for attribute, default in solr_attributes:
+                field_data[attribute] = getattr(field_class, attribute, default)
 
             if field_class.document is True:
                 content_field_name = field_class.index_fieldname

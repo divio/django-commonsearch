@@ -6,6 +6,7 @@ from optparse import make_option
 
 from django.conf import settings
 from django.core.management import BaseCommand
+from django.template import Context, Template
 from django.template.loader import find_template
 from django.utils.translation import override as force_language
 
@@ -57,39 +58,38 @@ class Command(BuildSolrSchemaCommand):
         core_root = os.path.join(settings.PROJECT_ROOT, output_folder)
 
         with force_language(language):
-            core_conf_root = self.build_conf(core_root)
+            core_conf_root = self.build_conf(core_root, language)
 
             schema_xml = self.build_template(using=backend)
             schema_xml_path = os.path.join(core_conf_root, 'schema.xml')
             self.write_file(schema_xml_path, schema_xml)
 
-    def build_conf(self, core_path):
-        conf_files = []
-
+    def build_conf(self, core_path, language):
         if os.path.exists(SOLR_TEMPLATES_ROOT):
             if os.path.isdir(core_path):
                 shutil.rmtree(core_path)
             shutil.copytree(SOLR_TEMPLATES_ROOT, core_path)
-        else:
-            conf_files = [
-                'conf/protwords.txt',
-                'conf/solrconfig.xml',
-                'conf/stopwords.txt',
-                'conf/synonyms.txt'
-            ]
 
         conf_path = os.path.join(core_path, 'conf/')
 
         if not os.path.isdir(conf_path):
             os.makedirs(conf_path)
 
-        for filename in conf_files:
-            template_name = os.path.join('commonsearch/solr_core_template', filename)
-            template = find_template(template_name)[0]
-            shutil.copy(template.origin.name, os.path.join(conf_path, filename))
+        solr_config_path = os.path.join(core_path, conf_path, 'solrconfig.xml')
+
+        if os.path.exists(solr_config_path):
+            # nasty but needed when some options like highlighting
+            # are language dependant
+            context = Context({'language': language})
+
+            with open(solr_config_path) as solr_config_file:
+                solr_config_template = Template(solr_config_file.read())
+                solr_config = solr_config_template.render(context)
+
+            self.write_file(solr_config_path, solr_config)
         return conf_path
 
     def build_context(self, using):
         context = super(Command, self).build_context(using)
-        context['current_language'] = self.get_language(using)
+        context['language'] = self.get_language(using)
         return context
