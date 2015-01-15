@@ -12,7 +12,11 @@ from django.utils.translation import override as force_language
 
 from haystack.management.commands.build_solr_schema import Command as BuildSolrSchemaCommand
 
-from aldryn_search.utils import language_from_alias
+
+try:
+    from aldryn_search.utils import language_from_alias
+except ImportError:
+    from ...utils import language_from_alias
 
 # hack to import deployment.py file :(
 sys.path.append(settings.PROJECT_ROOT)
@@ -32,6 +36,14 @@ class Command(BuildSolrSchemaCommand):
             type="string",
             dest="stages",
         ),
+        make_option(
+            "-p",
+            "--prefix",
+            action="store",
+            default='%(project)s-%(stage)s',
+            type="string",
+            dest="prefix",
+        ),
     )
     option_list = BaseCommand.option_list + base_options
 
@@ -40,22 +52,30 @@ class Command(BuildSolrSchemaCommand):
 
         for backend in settings.HAYSTACK_CONNECTIONS:
             for stage in stages:
-                self.build_core(backend, stage)
+                self.build_core(backend, stage, **options)
 
     def get_language(self, stage):
         return language_from_alias(stage) or settings.LANGUAGE_CODE
 
-    def build_core(self, backend, stage):
+    def build_core(self, backend, stage, **options):
         from deployment import project_name
 
         language = self.get_language(backend)
 
-        output_folder = 'tmp/%(project)s-%(stage)s-%(language)s' % {
+        core_name_format = '%(language)s'
+
+        core_prefix = options['prefix']
+
+        if core_prefix:
+            core_name_format = '-'.join([core_prefix, core_name_format])
+
+        core_name = core_name_format % {
             'project': project_name,
             'stage': stage,
             'language': language,
         }
-        core_root = os.path.join(settings.PROJECT_ROOT, output_folder)
+
+        core_root = os.path.join(settings.PROJECT_ROOT, 'tmp', core_name)
 
         with force_language(language):
             core_conf_root = self.build_conf(core_root, language)
