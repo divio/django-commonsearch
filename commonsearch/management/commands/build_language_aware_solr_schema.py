@@ -44,13 +44,21 @@ class Command(BuildSolrSchemaCommand):
             type="string",
             dest="prefix",
         ),
+        make_option(
+            "-u",
+            "--using",
+            action="append",
+            dest="using",
+            default=[],
+        ),
     )
     option_list = BaseCommand.option_list + base_options
 
     def handle(self, *args, **options):
+        backends = options.get('using') or settings.HAYSTACK_CONNECTIONS.keys()
         stages = options.get('stages') or ['dev']
 
-        for backend in settings.HAYSTACK_CONNECTIONS:
+        for backend in backends:
             for stage in stages:
                 self.build_core(backend, stage, **options)
 
