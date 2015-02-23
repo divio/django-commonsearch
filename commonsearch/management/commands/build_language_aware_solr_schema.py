@@ -23,6 +23,8 @@ sys.path.append(settings.PROJECT_ROOT)
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), '../../conf/solr/core')
 
+CORE_OUTPUT_FORMAT = getattr(settings, 'COMMONSEARCH_SOLR_CORE_OUTPUT_FORMAT', '%(project)s-%(stage)s-%(language)s')
+
 SOLR_TEMPLATES_ROOT = getattr(settings, 'COMMONSEARCH_SOLR_CORE_TEMPLATES_ROOT', DEFAULT_PATH)
 
 
@@ -37,12 +39,12 @@ class Command(BuildSolrSchemaCommand):
             dest="stages",
         ),
         make_option(
-            "-p",
-            "--prefix",
+            "-f",
+            "--format",
             action="store",
-            default='%(project)s-%(stage)s',
+            default=CORE_OUTPUT_FORMAT,
             type="string",
-            dest="prefix",
+            dest="format",
         ),
         make_option(
             "-u",
@@ -70,12 +72,7 @@ class Command(BuildSolrSchemaCommand):
 
         language = self.get_language(backend)
 
-        core_name_format = '%(language)s'
-
-        core_prefix = options['prefix']
-
-        if core_prefix:
-            core_name_format = '-'.join([core_prefix, core_name_format])
+        core_name_format = options['format']
 
         core_name = core_name_format % {
             'project': project_name,
